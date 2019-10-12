@@ -1,26 +1,31 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
 
-const App: React.FC = () => {
+/** Redux Store */
+import { connect } from 'react-redux'
+import { iRootState } from './redux/RootState'
+import { iTestState } from './modules/testState'
+
+import styled from 'styled-components'
+const Test = styled.div`
+  color: ${'red'};
+`
+
+interface iApp{
+  test: iTestState
+}
+
+const App: React.FC<iApp> = props => {
+  const { message } = props.test
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Test>{message}</Test>
   );
 }
 
-export default App;
+const mapStateToProps = (state:iRootState) => {
+  return {
+    test: state.test
+  }
+}
+
+export default connect(mapStateToProps)(App)
