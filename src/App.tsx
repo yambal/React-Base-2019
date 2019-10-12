@@ -15,10 +15,10 @@ interface iApp{
 }
 
 const App: React.FC<iApp> = props => {
-  const { message } = props.test
+  const { test: { message, config:{ nodeEnv, testMessage }} } = props
 
   return (
-    <Test>{message}</Test>
+    <Test>{message}, {nodeEnv}, {testMessage}</Test>
   );
 }
 
