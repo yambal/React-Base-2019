@@ -1,14 +1,14 @@
-import { iTestState, defaultState as defaultTestState } from '../modules/testState'
+import { iCounterState, defaultCounterState } from '../modules/counter/counterState'
 // import { RouterState } from 'connected-react-router'
 
 export interface iRootState {
     // router?: RouterState
-    test: iTestState
+    counter: iCounterState
 }
 
 export default iRootState
 
 
 export const initialState: iRootState = {
-    test : defaultTestState
+    counter : defaultCounterState
 }

@@ -1,12 +1,12 @@
 import { combineReducers, Reducer } from 'redux'
 import { History } from 'history'
 import { connectRouter } from 'connected-react-router'
-import testReducer from '../modules/testReducer'
+import counterReducer from '../modules/counter/counterReducer'
 
 
 const reducers = (history: History) => combineReducers<Reducer>({
   router: connectRouter(history),
-  test: testReducer
+  counter: counterReducer
 })
 
 export default reducers

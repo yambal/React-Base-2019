@@ -4,7 +4,9 @@ import { Link, Route, Switch } from 'react-router-dom'
 /** Redux Store */
 import { connect } from 'react-redux'
 import { iRootState } from './redux/RootState'
-import { iTestState } from './modules/testState'
+import { iCounterState } from './modules/counter/counterState'
+
+import addToCount from './modules/counter/counterAction'
 
 import styled from 'styled-components'
 const Test = styled.div`
@@ -12,21 +14,23 @@ const Test = styled.div`
 `
 
 interface iApp{
-  test: iTestState
+  count: iCounterState
+  addToCount: any
 }
 
 const App: React.FC<iApp> = props => {
-  const { test: { message, config:{ nodeEnv, testMessage }} } = props
+  const { count, addToCount } = props
 
   return (
     <React.Fragment>
-      <Test>{message}, {nodeEnv}, {testMessage}</Test>
+      <Test>{count.count}</Test>
       <Link to="/test">Test</Link>
       <Switch>
         <Route path="/test" render={() => (
           <Link to="/">back</Link>
         )}/>
       </Switch>
+      <div onClick={() => {addToCount(1)}}>test</div>
     </React.Fragment>
   );
 }
@@ -34,8 +38,12 @@ const App: React.FC<iApp> = props => {
 const mapStateToProps = (state:iRootState) => {
   console.log(state)
   return {
-    test: state.test
+    count: state.counter
   }
 }
 
-export default connect(mapStateToProps)(App)
+const mapDispatchToProps = { // あえて関数ではなくオブジェクトにしておきます。
+  addToCount
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(App)
