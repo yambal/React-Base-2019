@@ -1,34 +1,32 @@
 import React from 'react';
-import styled from 'styled-components'
+// import styled from 'styled-components'
 import { RouterState } from 'connected-react-router';
 import { Link, Route, Switch } from 'react-router-dom'
 
 /** Redux Store */
 import { connect } from 'react-redux'
 import { iRootState } from './redux/RootState'
-import { iCounterState } from './modules/counterModule'
 import { iConfigState } from './modules/configModule'
 
-/** Modules */
-import counterModule from './modules/counterModule'
-import routerModules from './modules/routerModules'
+import Counter from './container/Counter'
 
+/** Modules */
+import routerModules from './modules/routerModules'
+/*
 const Test = styled.div`
   color: ${'red'};
 `
-
+*/
 interface iApp{
   router?: RouterState
   config: iConfigState
-  count: iCounterState
-  addToCount: (add:number) => void
   pushTo: (path:string) => void
   back: () => void
   forward: () => void
 }
 
 const App: React.FC<iApp> = props => {
-  const { router, config, count, addToCount, forward, back } = props
+  const { router, config, forward, back } = props
 
   return (
     <React.Fragment>
@@ -52,11 +50,7 @@ const App: React.FC<iApp> = props => {
         <div>node env: {config.nodeEnv}</div>
         <div>test: {config.testString}</div>
       </div>
-      <div>
-        <h3>redux</h3>
-        <Test>{count.count}</Test>
-        <button type="button" onClick={() => {addToCount(1)}}>test</button>
-      </div>
+      <Counter />
     </React.Fragment>
   );
 }
@@ -70,7 +64,6 @@ const mapStateToProps = (state:iRootState) => {
 }
 
 const mapDispatchToProps = {
-  addToCount: counterModule.actionCreators.add,
   pushTo: routerModules.actionCreators.routerPush,
   back: routerModules.actionCreators.routerBack,
   forward: routerModules.actionCreators.routerForward
