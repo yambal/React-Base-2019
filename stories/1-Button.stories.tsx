@@ -1,21 +1,22 @@
-import React from 'react';
+import React from "react"
 
-import { action } from '@storybook/addon-actions';
+import { storiesOf } from "@storybook/react"
+import { text, boolean } from "@storybook/addon-knobs"
+import { action } from "@storybook/addon-actions"
 
-export default {
-  title: 'Button',
-};
-
-export const text = () => <button onClick={action('clicked')}>Hello Button</button>;
-
-export const emoji = () => (
-  <button onClick={action('clicked')}>
-    <span role="img" aria-label="so cool">
-      😀 😎 👍 💯
-    </span>
-  </button>
-);
-
-emoji.story = {
-  name: 'with emoji',
-};
+storiesOf("サンプル", module)
+  .add(
+    "サンプル",
+    () => (
+      <button
+        disabled={boolean("Disabled", false)}
+        onClick={action('onClick')}
+      >
+        {text("テキスト", "ボタン")}
+      </button>
+    ),
+    {
+      notes: '## Markdown',
+      info: '## Markdown'
+    }
+  );
