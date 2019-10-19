@@ -158,7 +158,6 @@
     "@storybook/addon-knobs": "^5.2.4",
     "@storybook/addon-links": "^5.2.4",
     "@storybook/addon-notes": "^5.2.4",
-    "@storybook/addon-storysource": "^5.2.4",
     "@storybook/addon-viewport": "^5.2.4",
     "@storybook/addons": "^5.2.4",
     "@storybook/react": "^5.2.4",
