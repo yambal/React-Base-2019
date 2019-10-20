@@ -8,7 +8,7 @@ import { connect } from 'react-redux'
 import { iRootState } from './redux/RootState'
 import { iConfigState } from './modules/configModule'
 
-import Counter from './container/Counter'
+import Counter from './container/CounterContainer'
 
 /** Modules */
 import routerModules from './modules/routerModules'

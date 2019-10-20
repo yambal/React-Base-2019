@@ -3,21 +3,31 @@ import { connect } from 'react-redux'
 import counterModule from '../modules/counterModule'
 import { iCounterState } from '../modules/counterModule'
 import { iRootState } from '../redux/RootState'
+import Counter from '../components/organisms/Counter';
 
 interface iCounter{
   counter: iCounterState
   addToCount: (add:number) => void
 }
 
-const Counter:React.FC<iCounter> = (props:iCounter) => {
+const CounterContainer:React.FC<iCounter> = (props:iCounter) => {
   const { addToCount, counter } = props
 
+  const handleAdd = () => {
+    addToCount(1)
+  }
+
+  const handleSubtract = () => {
+    addToCount(-1)
+  }
+
   return (
-    <div>
-      <div>{counter.count}</div>
-      <button onClick={() => addToCount(1)}>+</button>
-      <button onClick={() => addToCount(-1)}>-</button>
-    </div>
+    <Counter
+      count={counter.count}
+      isBusy={counter.isBusy}
+      handleAdd={handleAdd}
+      handleSubtract={handleSubtract}
+    />
   )
 }
 
@@ -31,4 +41,4 @@ const mapDispatchToProps = {
   addToCount: counterModule.actionCreators.add,
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Counter)
+export default connect(mapStateToProps, mapDispatchToProps)(CounterContainer)
