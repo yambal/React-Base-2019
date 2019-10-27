@@ -1,14 +1,13 @@
 import React from 'react';
 // import styled from 'styled-components'
 import { RouterState } from 'connected-react-router';
-import { Link, Route, Switch } from 'react-router-dom'
 
 /** Redux Store */
 import { connect } from 'react-redux'
 import { iRootState } from './redux/RootState'
 import { iConfigState } from './modules/configModule'
 
-import Counter from './container/Counter'
+import P2pContainer from './container/P2pContainer'
 
 /** Modules */
 import routerModules from './modules/routerModules'
@@ -30,27 +29,7 @@ const App: React.FC<iApp> = props => {
 
   return (
     <React.Fragment>
-      <div>
-        <h3>router</h3>
-        <pre>{JSON.stringify(router, null, 2)}</pre>
-        <Link to="/test1">Test 1</Link>
-        <div onClick={forward}>forward</div>
-        <Switch>
-          <Route path="/test1" render={() => (
-            <div>
-              <h4>test 1</h4>
-              <Link to="/">home</Link>
-              <div onClick={back}>back</div>
-            </div>
-          )}/>
-        </Switch>
-      </div>
-      <div>
-        <h3>dotenv</h3>
-        <div>node env: {config.nodeEnv}</div>
-        <div>test: {config.testString}</div>
-      </div>
-      <Counter />
+      <P2pContainer />
     </React.Fragment>
   );
 }
