@@ -13,6 +13,7 @@ interface iP2pContainerProps {
   connect: (peerId: string) => void,
   send: (dataConnection: DataConnection, data:any) => void
   close:(dataConnection: DataConnection) => void
+  destroy: () => void
   disconnect: () => void,
   reconnect: () => void,
   /*
@@ -91,6 +92,7 @@ const P2pContainer:React.FC<iP2pContainerProps> = (props) => {
       <div>シグナルサーバ：{props.p2p.isOpen ? 'open' : 'close'}</div>
       <div>{props.p2p.status.code} : {props.p2p.status.message}</div>
       <div>your id : {props.p2p.myClientId}</div>
+      <button onClick={props.destroy} disabled={!isOpen}>destroy</button>
       <button onClick={props.disconnect} disabled={!isOpen}>disconnect</button>
       <button onClick={props.reconnect} disabled={isOpen}>reconnect</button>
       <hr />
@@ -149,6 +151,7 @@ const mapStateToProps = (state:iRootState) => {
 const mapDispatchToProps = {
   open:       p2pModule.actionCreators.signalingServer.open,
   getIpList:  p2pModule.actionCreators.signalingServer.getIdList,
+  destroy:    p2pModule.actionCreators.signalingServer.destroy,
   disconnect: p2pModule.actionCreators.signalingServer.disconnect,
   reconnect:  p2pModule.actionCreators.signalingServer.reconnect,
   connect:    p2pModule.actionCreators.connections.dataChannel.connect,

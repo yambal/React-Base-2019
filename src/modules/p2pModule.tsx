@@ -111,7 +111,7 @@ interface iP2PAction {
 }
 
 const P2P_ACTIONS = {
-  SS: {
+  SIGNAL_SERVER: {
     OPENING:                'P2P_ACTION_OPENING',
     OPENED:                 'P2P_ACTION_OPENED',
     ON_GET_ID_LIST:         'P2P_ACTION_ON_GET_ID_LIST',
@@ -124,7 +124,7 @@ const P2P_ACTIONS = {
         DATA_SENDED:        'P2P_ACTION_DATA_CONNECTION_DATA_SENDED',
         ON_DATA:            'P2P_ACTION_DATA_CONNECTION_ON_DATA',
         CLOSED:             'P2P_ACTION_DATA_CONNECTION_CLOSED',
-        ERROR:             'P2P_ACTION_DATA_CONNECTION_ERROR',
+        ERROR:              'P2P_ACTION_DATA_CONNECTION_ERROR',
       }
     }
   },
@@ -140,14 +140,14 @@ const P2P_ACTIONS = {
 const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
   const { open = false } = signalingServer || {}
   switch (action.type) {
-    case P2P_ACTIONS.SS.OPENING:
+    case P2P_ACTIONS.SIGNAL_SERVER.OPENING:
       /* シグナリングサーバに接続を開始した */
       return Object.assign({}, state, {
         status: DCStatuses.opening,
         isOpen: open,
       })
 
-    case P2P_ACTIONS.SS.OPENED:
+    case P2P_ACTIONS.SIGNAL_SERVER.OPENED:
       /* シグナリングサーバに接続した */
       return Object.assign({}, state, {
         status: DCStatuses.opened,
@@ -155,7 +155,7 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
         myClientId: action.peerId
       })
 
-    case P2P_ACTIONS.SS.ON_GET_ID_LIST:
+    case P2P_ACTIONS.SIGNAL_SERVER.ON_GET_ID_LIST:
       /* シグナリングサーバに接続したIDを取得した */
       return Object.assign({}, state, {
         status: DCStatuses.opened,
@@ -163,21 +163,21 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
         ids: action.ids
       })
 
-    case P2P_ACTIONS.SS.DISCONNECTED:
+    case P2P_ACTIONS.SIGNAL_SERVER.DISCONNECTED:
       /* シグナリングサーバから切断したとき */
       return Object.assign({}, state, {
         status: DCStatuses.disconnected,
         isOpen: open,
         myClientId: action.peerId
       })
-    case P2P_ACTIONS.SS.CLOSED:
+    case P2P_ACTIONS.SIGNAL_SERVER.CLOSED:
       /* 全ての接続を終了した */
       return Object.assign({}, state, {
         status: DCStatuses.close,
         isOpen: open,
       })
 
-    case P2P_ACTIONS.SS.ERRORED:
+    case P2P_ACTIONS.SIGNAL_SERVER.ERRORED:
       /* エラーが発生した */
       return Object.assign({}, state, {
         status: DCStatuses.error,
@@ -185,7 +185,7 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
         isOpen: open,
       })
 
-    case P2P_ACTIONS.SS.CONNECTION.DATA.CONNECTED:
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.CONNECTED:
       /** データコネクションに接続した */
       if(action.dataConnection){
         dataConnections.push(action.dataConnection)
@@ -201,7 +201,7 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
       }
       break;
 
-    case P2P_ACTIONS.SS.CONNECTION.DATA.DATA_SENDED:
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.DATA_SENDED:
       /** データを送信した */
       const dataConnectionStates = state.dataConnectionStates.concat([])
       dataConnectionStates.map((dataConnectionState) => {
@@ -219,7 +219,7 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
         dataConnectionStates
       })
     
-    case P2P_ACTIONS.SS.CONNECTION.DATA.ON_DATA:
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.ON_DATA:
       /** データを受信した */
       const dataConnectionStatesB = state.dataConnectionStates.concat([])
       dataConnectionStatesB.map((dataConnectionState) => {
@@ -237,7 +237,7 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
         dataConnectionStatesB
       })
 
-    case P2P_ACTIONS.SS.CONNECTION.DATA.CLOSED:
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.CLOSED:
       /** データコネクションから切断した */
       if(action.dataConnection){
         dataConnections = dataConnections.filter((dataConnection) => {
@@ -256,7 +256,7 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
       }
       break;
     
-    case P2P_ACTIONS.SS.CONNECTION.DATA.ERROR:
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.ERROR:
       /** データコネクションにエラーが発生した */
       return Object.assign({}, state, {
         status: DCStatuses.dataConnectionError,
@@ -291,19 +291,19 @@ const ssActions = {
   started : ():iP2PAction => {
     /** 接続を開始した */
     return {
-      type: P2P_ACTIONS.SS.OPENING,
+      type: P2P_ACTIONS.SIGNAL_SERVER.OPENING,
     };
   },
   opened: (peerId:string):iP2PAction => {
     /** 接続した */
     return {
-      type: P2P_ACTIONS.SS.OPENED,
+      type: P2P_ACTIONS.SIGNAL_SERVER.OPENED,
       peerId
     };
   },
   onGetIds: (peerIds: string[]) => {
     return {
-      type: P2P_ACTIONS.SS.ON_GET_ID_LIST,
+      type: P2P_ACTIONS.SIGNAL_SERVER.ON_GET_ID_LIST,
       ids: peerIds
     }
   },
@@ -312,14 +312,14 @@ const ssActions = {
       connected: (dataConnection:DataConnection) => {
         /** データコネクションに接続した */
         return {
-          type: P2P_ACTIONS.SS.CONNECTION.DATA.CONNECTED,
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.CONNECTED,
           dataConnection
         }
       },
       dataSended: (dataConnection:DataConnection, data:any) => {
         /** データを送信した */
         return {
-          type: P2P_ACTIONS.SS.CONNECTION.DATA.DATA_SENDED,
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.DATA_SENDED,
           dataConnection,
           data
         }
@@ -327,7 +327,7 @@ const ssActions = {
       onData: (dataConnection:DataConnection, data:any) => {
         /** データを受信した */
         return {
-          type: P2P_ACTIONS.SS.CONNECTION.DATA.ON_DATA,
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.ON_DATA,
           dataConnection,
           data
         }
@@ -335,13 +335,13 @@ const ssActions = {
       closed: (dataConnection:DataConnection) => {
         /** データコネクションが切断した */
         return {
-          type: P2P_ACTIONS.SS.CONNECTION.DATA.CLOSED,
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.CLOSED,
           dataConnection: dataConnection
         }
       },
       error: (dataConnection:DataConnection) => {
         return {
-          type: P2P_ACTIONS.SS.CONNECTION.DATA.ERROR,
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.DATA.ERROR,
           dataConnection: dataConnection
         }
       }
@@ -350,20 +350,20 @@ const ssActions = {
   disconnected : (peerId:string) => {
     /* シグナリングサーバから切断したとき */
     return {
-      type: P2P_ACTIONS.SS.DISCONNECTED,
+      type: P2P_ACTIONS.SIGNAL_SERVER.DISCONNECTED,
       peerId
     }
   },
   closed : () => {
     /* Peerに対する全ての接続を終了したとき */
     return {
-      type: P2P_ACTIONS.SS.CLOSED,
+      type: P2P_ACTIONS.SIGNAL_SERVER.CLOSED,
     }
   },
   errored : (error: Error) => {
     /* エラーが発生したとき */
     return {
-      type: P2P_ACTIONS.SS.ERRORED,
+      type: P2P_ACTIONS.SIGNAL_SERVER.ERRORED,
       error
     }
   }
@@ -460,6 +460,14 @@ const actionCreators = {
         }
       }
     },
+    destroy: () => {
+      /* 全てのコネクションを閉じ、シグナリングサーバへの接続を切断します */
+      return (dispatch:any) => {
+        if (signalingServer) {
+          signalingServer.destroy()
+        }
+      }
+    },
     disconnect: () => {
       /* シグナリングサーバへの接続を閉じ、disconnectedイベントを送出 */
       return (dispatch:any) => {
@@ -529,18 +537,6 @@ const actionCreators = {
           })
         }
       }
-      /*
-      close: (dataConnectionId:string) => {
-        return (dispatch:any) => {
-          const closeDCs = dataConnections.filter((dataConnection) => {
-            return dataConnection.id === dataConnectionId
-          })
-          closeDCs.map((closeDC) => {
-            closeDC.close()
-          })
-        }
-      }
-      */
     }
   },
   pend: {
