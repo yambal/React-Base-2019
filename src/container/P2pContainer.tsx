@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { connect } from 'react-redux'
 import { iRootState } from '../redux/RootState'
 import p2pModule, { iP2PState, tSignalingServerDebug } from '../modules/p2pModule'
-import { DataConnection } from 'skyway-js';
+import { DataConnection, Room } from 'skyway-js';
 
 const { useEffect } = React
 
@@ -16,6 +16,10 @@ interface iP2pContainerProps {
   destroy: () => void
   disconnect: () => void,
   reconnect: () => void,
+  meshJoin: (roomName:string) => void,
+  meshSend: (meshName:string, data:any) => void,
+  meshClose: (roomName:string) => void
+
   /*
   destroy: () => void,
   joinToRoom: () => void,
@@ -78,6 +82,26 @@ const P2pContainer:React.FC<iP2pContainerProps> = (props) => {
     })
   }
 
+  const handleOnMeshJoin = (e:React.MouseEvent<HTMLButtonElement>) => {
+    props.meshJoin('ROOM')
+  }
+
+  const handleOnSendDataToMesh = (e:React.MouseEvent<HTMLButtonElement>) => {
+    const meshName = e.currentTarget.dataset.meshname
+    props.p2p.meshStates.map((meshState) => {
+      if(meshState.meshName === meshName){
+        props.meshSend(meshState.meshName, 'Hello')
+      }
+    })
+  }
+
+  const handleOnMeshClose = (e:React.MouseEvent<HTMLButtonElement>) => {
+    const meshName = e.currentTarget.dataset.meshname
+    if(meshName){
+      props.meshClose(meshName)
+    }
+  }
+
   const selectableIds = () => {
     const remoteIds = props.p2p.dataConnectionStates.map((dataConnectionState) => {
       return dataConnectionState.dataConnection.remoteId
@@ -135,8 +159,25 @@ const P2pContainer:React.FC<iP2pContainerProps> = (props) => {
           })
         }
       </div>
-      
-      
+      <hr />
+      <button onClick={handleOnMeshJoin}>Join</button>
+      {
+        props.p2p.meshStates.map((meshState) => {
+          return(
+          <div key={meshState.meshName}>
+            {meshState.meshName}
+            <ul>
+              {meshState.clientIds.map((clientId) => {
+                return <li key={clientId}>{clientId}</li>
+              })}
+            </ul>
+            <pre>{JSON.stringify(props.p2p.meshStates, null, 2)}</pre>
+            <button onClick={handleOnMeshClose} data-meshname={meshState.meshName}>close</button>
+            <button onClick={handleOnSendDataToMesh} data-meshname={meshState.meshName}>send</button>
+          </div>
+          )
+        })
+      }
       
     </div>
   )
@@ -156,7 +197,11 @@ const mapDispatchToProps = {
   reconnect:  p2pModule.actionCreators.signalingServer.reconnect,
   connect:    p2pModule.actionCreators.connections.dataChannel.connect,
   send:       p2pModule.actionCreators.connections.dataChannel.sendData,
-  close:    p2pModule.actionCreators.connections.dataChannel.close
+  close:      p2pModule.actionCreators.connections.dataChannel.close,
+  meshJoin:   p2pModule.actionCreators.connections.mesh.join,
+  meshSend:   p2pModule.actionCreators.connections.mesh.sendData,
+  meshClose:  p2pModule.actionCreators.connections.mesh.close,
+
   /*
   destroy:    p2pModule.actionCreators.signalingServer.destroy,
   joinToRoom: p2pModule.actionCreators.Room.join,

@@ -1,4 +1,5 @@
-import Peer, { DataConnection } from 'skyway-js';
+import Peer, { DataConnection, MeshRoom, Room } from 'skyway-js';
+import { idea } from 'react-syntax-highlighter/dist/styles/hljs';
 
 /**
  * https://webrtc.ecl.ntt.com/skyway-js-sdk-doc/ja/peer/#connectpeerid-options
@@ -65,14 +66,34 @@ interface dataChannelOptions {
   connectionId?: string
 }
 
+interface meshOptions {
+  mode?: 'sfu' | 'mesh'
+  stream?: MediaStream
+  videoBandwidth?: number
+  audioBandwidth?: number
+  videoCodec?:string
+  audioCodec?:string
+  videoReceiveEnabled?: boolean
+  audioReceiveEnabled?: boolean
+}
+
 interface iDataConnectionState {
   dataConnection: DataConnection
   datas: any[]
 }
 
+interface iMeshState {
+  meshName: string
+  clientIds: string[]
+  datas: {
+    clientId: string
+    data: any
+  }[]
+}
+
 let signalingServer:Peer | undefined = undefined
 let dataConnections:DataConnection[] = []
-let room:any | undefined = undefined
+let meshs:MeshRoom[] = []
 
 export interface iP2PState {
   status: iDCStatus
@@ -81,7 +102,7 @@ export interface iP2PState {
   error?: Error 
   myClientId?: string
   dataConnectionStates: iDataConnectionState[]
-  entered: boolean
+  meshStates: iMeshState[]
 }
 
 /**
@@ -94,7 +115,7 @@ const initialP2PState:iP2PState = {
   error: undefined,
   myClientId: undefined,
   dataConnectionStates: [],
-  entered: false
+  meshStates: []
 }
 
 /**
@@ -107,6 +128,7 @@ interface iP2PAction {
   peer?: Peer
   peerId?: string
   dataConnection?: DataConnection,
+  mesh?: MeshRoom,
   data?: any
 }
 
@@ -125,6 +147,14 @@ const P2P_ACTIONS = {
         ON_DATA:            'P2P_ACTION_DATA_CONNECTION_ON_DATA',
         CLOSED:             'P2P_ACTION_DATA_CONNECTION_CLOSED',
         ERROR:              'P2P_ACTION_DATA_CONNECTION_ERROR',
+      },
+      MESH: {
+        JOINED:             'P2P_ACTION_MESH_JOINED',
+        JOINED_OTHER:       'P2P_ACTION_MESH_JOINED_OTHER',
+        CLIENT_ID_CHANGED:  'P2P_ACTION_MESH_CLIENT_ID_CHANGED',
+        DATA_RECEIVED:      'P2P_ACTION_MESH_CLIENT_DATA_RECEIVED',
+        CLOSED:             'P2P_ACTION_MESH_CLOSED',
+        DATA_SENDED:        'P2P_ACTION_MESH_DATA_SENDED',
       }
     }
   },
@@ -263,22 +293,88 @@ const reducer = (state: iP2PState = initialP2PState, action: iP2PAction) => {
         isOpen: open
       })
 
-    case P2P_ACTIONS.ROOM_JOIN_STARTED:
-      return Object.assign({}, state, {
-        state: 'joinRoom start'
-      })
+    /** Meah */
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.JOINED:
+      /** Meshへの参加 */
+      if(action.mesh){
+        meshs.push(action.mesh)
+        const meshState:iMeshState = {
+          meshName: action.mesh.name,
+          clientIds: [],
+          datas: []
+        }
+        return Object.assign({}, state, {
+          meshStates: state.meshStates.concat([meshState])
+        })
+      }
+    break
 
-    case P2P_ACTIONS.ROOM_JOINED:
-      return Object.assign({}, state, {
-        state: 'joinRoom',
-        entered: true
-      })
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.JOINED_OTHER:
+      /** 他のClientがMeshへ参加 */
+      return state
 
-    case P2P_ACTIONS.ROOM_LEAVED:
-      return Object.assign({}, state, {
-        state: 'close',
-        entered: false
-      })
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.CLIENT_ID_CHANGED:
+      /** Meshへの参加 clientId が変化したとき：遅延して呼ぶ */
+      if(action.mesh){
+        const ms = state.meshStates.map((meshState) => {
+          if(action.mesh && meshState.meshName === action.mesh.name){
+            meshState.clientIds = Object.keys(action.mesh.connections)
+          }
+          return meshState
+        })
+        return Object.assign({}, state, {
+          meshStates: ms
+        })
+      }
+      return state
+
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.DATA_SENDED:
+      /** 全てのユーザーにデータを送信した */
+      if(action.mesh){
+        const ms = state.meshStates.map((meshState) => {
+          if(action.mesh && signalingServer && meshState.meshName === action.mesh.name){
+            meshState.datas.push({
+              clientId: signalingServer.id,
+              data: action.data
+            })
+          }
+          return meshState
+        })
+        return Object.assign({}, state, {
+          meshStates: ms
+        })
+      }
+      return state
+
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.DATA_RECEIVED:
+      if(action.mesh){
+        const ms = state.meshStates.map((meshState) => {
+          if(action.mesh && action.peerId && meshState.meshName === action.mesh.name){
+            meshState.datas.push({
+              clientId: action.peerId,
+              data: action.data
+            })
+          }
+          return meshState
+        })
+        return Object.assign({}, state, {
+          meshStates: ms
+        })
+      }
+      return state
+    
+    case P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.CLOSED:
+      if(action.mesh){
+        meshs = meshs.filter((mesh) =>{
+          return action.mesh && mesh.name !== action.mesh.name
+        })
+        const deletedMeshStates = state.meshStates.filter((meshState) => {
+          return action.mesh && meshState.meshName !== action.mesh.name
+        })
+        return Object.assign({}, state, {
+          meshStates: deletedMeshStates
+        })
+      }
 
     default: return state
   }
@@ -305,6 +401,26 @@ const ssActions = {
     return {
       type: P2P_ACTIONS.SIGNAL_SERVER.ON_GET_ID_LIST,
       ids: peerIds
+    }
+  },
+  disconnected : (peerId:string) => {
+    /* シグナリングサーバから切断したとき */
+    return {
+      type: P2P_ACTIONS.SIGNAL_SERVER.DISCONNECTED,
+      peerId
+    }
+  },
+  closed : () => {
+    /* Peerに対する全ての接続を終了したとき */
+    return {
+      type: P2P_ACTIONS.SIGNAL_SERVER.CLOSED,
+    }
+  },
+  errored : (error: Error) => {
+    /* エラーが発生したとき */
+    return {
+      type: P2P_ACTIONS.SIGNAL_SERVER.ERRORED,
+      error
     }
   },
   connection: {
@@ -345,45 +461,49 @@ const ssActions = {
           dataConnection: dataConnection
         }
       }
+    },
+    mesh: {
+      joined : (mesh: MeshRoom) => {
+        return {
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.JOINED,
+          mesh
+        }
+      },
+      joinedOtherClient: (mesh: MeshRoom, clientId:string) => {
+        return {
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.JOINED_OTHER,
+          mesh,
+          peerId: clientId
+        }
+      },
+      changeClientId: (mesh: MeshRoom, clientId:string) => {
+        return {
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.CLIENT_ID_CHANGED,
+          mesh
+        }
+      },
+      dataSended: (mesh: MeshRoom, data:any) => {
+        return {
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.DATA_SENDED,
+          mesh,
+          data
+        }
+      },
+      dataReceived: (mesh: MeshRoom, clientId: string, data: any) => {
+        return {
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.DATA_RECEIVED,
+          mesh,
+          peerId: clientId,
+          data
+        }
+      },
+      closed: (mesh: MeshRoom) => {
+        return {
+          type: P2P_ACTIONS.SIGNAL_SERVER.CONNECTION.MESH.CLOSED,
+          mesh
+        }
+      }
     }
-  },
-  disconnected : (peerId:string) => {
-    /* シグナリングサーバから切断したとき */
-    return {
-      type: P2P_ACTIONS.SIGNAL_SERVER.DISCONNECTED,
-      peerId
-    }
-  },
-  closed : () => {
-    /* Peerに対する全ての接続を終了したとき */
-    return {
-      type: P2P_ACTIONS.SIGNAL_SERVER.CLOSED,
-    }
-  },
-  errored : (error: Error) => {
-    /* エラーが発生したとき */
-    return {
-      type: P2P_ACTIONS.SIGNAL_SERVER.ERRORED,
-      error
-    }
-  }
-}
-
-const joinStarted = () => {
-  return {
-    type: P2P_ACTIONS.ROOM_JOIN_STARTED
-  }
-}
-
-const roomJoined = () => {
-  return {
-    type: P2P_ACTIONS.ROOM_JOINED
-  }
-}
-
-const roomLeaved = () => {
-  return {
-    type: P2P_ACTIONS.ROOM_LEAVED
   }
 }
 
@@ -431,7 +551,7 @@ const actionCreators = {
         signalingServer.on('open', (peerId:string) => {
           /* シグナリングサーバへ正常に接続できたとき */
           dispatch(ssActions.opened(peerId));
-        });
+        })
     
         signalingServer.on('disconnected', (peerId:string) => {
           /* シグナリングサーバから切断したとき */
@@ -486,8 +606,8 @@ const actionCreators = {
     }
   },
   connections: {
-    /** 指定したPeerにデータチャネルで接続する */
     dataChannel: {
+      /** 指定したPeerにデータチャネルで接続する */
       connect: (remoteClientId:string, options?: dataChannelOptions) => {
         return (dispatch:any) => {
           if (signalingServer) {
@@ -537,64 +657,75 @@ const actionCreators = {
           })
         }
       }
-    }
-  },
-  pend: {
-    destroy: () => {
-      /* 全てのコネクションを閉じ、シグナリングサーバへの接続を切断 */
-      return (dispatch:any) => {
-        if (signalingServer) {
-          signalingServer.destroy()
+    },
+    mesh: {
+      join: (roomName: string, meshOption: meshOptions = {mode: 'mesh'} ) => {
+        /** Mesh にs接続する */
+        return (dispatch:any) => {
+          if (signalingServer) {
+            const mesh:MeshRoom = signalingServer.joinRoom(roomName, meshOption)
+
+            mesh.on('close', () => {
+              dispatch(ssActions.connection.mesh.closed(mesh))
+            });
+
+            mesh.on('data', ({ src, data }) => {
+              // 他のユーザーから送信されたデータを受信した時
+              dispatch(ssActions.connection.mesh.dataReceived(mesh, src, data))
+            });
+
+            mesh.on('peerLeave', clientId => {
+              setTimeout(()=>{
+                // メンバー更新を遅延して呼ぶ
+                dispatch(ssActions.connection.mesh.changeClientId(mesh, clientId))
+              }, 500)
+            });
+
+            mesh.on('peerJoin', clientId => {
+              dispatch(ssActions.connection.mesh.joinedOtherClient(mesh, clientId))
+              setTimeout(()=>{
+                // メンバー更新を遅延して呼ぶ
+                dispatch(ssActions.connection.mesh.changeClientId(mesh, clientId))
+              }, 500)
+            });
+
+            dispatch(ssActions.connection.mesh.joined(mesh))
+            setTimeout(()=>{
+              // メンバー更新を遅延して呼ぶ
+              if(signalingServer){
+                dispatch(ssActions.connection.mesh.changeClientId(mesh, signalingServer.id))
+              }
+            },500)
+
+            
+          }
+        }
+      },
+      sendData: (meshName:string, data:any) => {
+        /** Mesh にデータを送信する */
+        return (dispatch:any) => {
+          const sMesh = meshs.filter((mesh) => {
+            return mesh.name === meshName
+          })[0]
+
+          if(sMesh){
+            sMesh.send(data)
+            dispatch(ssActions.connection.mesh.dataSended(sMesh, data))
+          }
+        }
+      },
+      close: (roomName: string) => {
+        /** Mesh から退出する */
+        return (dispatch:any) => {
+          meshs.map((mesh) => {
+            if(mesh.name === roomName){
+              mesh.close()
+            }
+          })
         }
       }
-    },
-  },
-  Room: {
-    join: () => {
-      return (dispatch:any) => {
-        dispatch(joinStarted());
-        if(signalingServer) {
-          
-          room = signalingServer.joinRoom('room', {
-            mode: 'mesh'
-          })
-    
-          room.on('open', () => {
-            /* 新規にルームへ入室したとき */
-            console.info('room on open')
-            dispatch(roomJoined())
-          });
-    
-          room.on('data', (peerId:string, data:any) => {
-            /* データを受信したとき */
-            console.log('room on data', peerId, data)
-          })
-    
-          room.on('peerJoin', (peerId: string) => {
-            /* ルームに新しいメンバが参加したとき */
-            console.log('room on peerJoin', peerId)
-          })
-    
-          room.on('peerLeave', (peerId: string) => {
-            /* ルームからメンバが退出したとき */
-            console.log('room on peerLeave', peerId)
-          });
-    
-          room.on('close', () => {
-            /* ルームをclose(退出))したとき */
-            console.info('room on close')
-            room = undefined
-            dispatch(roomLeaved())
-          });
-        }
-      }
-    },
-    leave: () => {
-      return (dispatch:any) => {
-        room.close()
-      }
     }
-  }
+  },
 }
 
 const p2pModule = {
