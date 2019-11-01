@@ -1,5 +1,4 @@
 import Peer, { DataConnection, MeshRoom, Room } from 'skyway-js';
-import { idea } from 'react-syntax-highlighter/dist/styles/hljs';
 
 /**
  * https://webrtc.ecl.ntt.com/skyway-js-sdk-doc/ja/peer/#connectpeerid-options
@@ -697,7 +696,6 @@ const actionCreators = {
               }
             },500)
 
-            
           }
         }
       },
