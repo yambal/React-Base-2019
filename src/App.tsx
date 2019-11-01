@@ -9,6 +9,7 @@ import { iRootState } from './redux/RootState'
 import { iConfigState } from './modules/configModule'
 
 import Counter from './container/Counter'
+import PdfMaker from './container/PdfMaker'
 
 /** Modules */
 import routerModules from './modules/routerModules'
@@ -51,6 +52,7 @@ const App: React.FC<iApp> = props => {
         <div>test: {config.testString}</div>
       </div>
       <Counter />
+      <PdfMaker />
     </React.Fragment>
   );
 }
