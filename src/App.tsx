@@ -1,5 +1,4 @@
 import React from 'react';
-// import styled from 'styled-components'
 import { RouterState } from 'connected-react-router';
 import { Link, Route, Switch } from 'react-router-dom'
 
@@ -12,11 +11,11 @@ import Counter from './container/Counter'
 
 /** Modules */
 import routerModules from './modules/routerModules'
-/*
-const Test = styled.div`
-  color: ${'red'};
-`
-*/
+import { ThemeProvider } from 'emotion-theming';
+
+import theme from './components/Themes/theme'
+import GlobalStyle from './components/Themes/GlobalStyle';
+
 interface iApp{
   router?: RouterState
   config: iConfigState
@@ -25,11 +24,13 @@ interface iApp{
   forward: () => void
 }
 
+
 const App: React.FC<iApp> = props => {
   const { router, config, forward, back } = props
 
   return (
-    <React.Fragment>
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
       <div>
         <h3>router</h3>
         <pre>{JSON.stringify(router, null, 2)}</pre>
@@ -51,7 +52,7 @@ const App: React.FC<iApp> = props => {
         <div>test: {config.testString}</div>
       </div>
       <Counter />
-    </React.Fragment>
+    </ThemeProvider>
   );
 }
 
